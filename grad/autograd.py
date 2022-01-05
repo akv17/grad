@@ -18,6 +18,10 @@ class Tensor:
     name: str
     data: Any
 
+    def update(self, delta):
+        data = self.data + delta
+        object.__setattr__(self, 'data', data)
+
 
 @dataclass(frozen=True)
 class Node:
@@ -267,11 +271,34 @@ class MSELoss:
         return grad
 
 
+class SGD:
+
+    def __init__(self, learning_rate=0.01):
+        self.learning_rate = learning_rate
+        self._graph = None
+
+    def assign_graph(self, graph):
+        self._graph = graph
+
+    def step(self, grads):
+        updated = set()
+        for node in self._graph.nodes:
+            grad = grads.get(node.name)
+            if node.name in updated or grad is None:
+                continue
+            tensor = node.tensor
+            delta = -(grad.data * self.learning_rate)
+            tensor.update(delta)
+            updated.add(node.name)
+
+
 class Network:
 
-    def __init__(self, graph, loss):
+    def __init__(self, graph, loss, optimizer):
         self.graph = graph
         self.loss = loss
+        self.optimizer = optimizer
+        self.optimizer.assign_graph(self.graph)
         self._output = None
 
     def forward(self, x):
@@ -285,3 +312,6 @@ class Network:
         grads = self.graph.backward(grad)
         data = {'loss': loss_value, 'grads': grads}
         return data
+
+    def step(self, grads):
+        self.optimizer.step(grads)
