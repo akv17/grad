@@ -17,6 +17,7 @@ def get_inner_ops(obj):
 class Tensor:
     name: str
     data: Any
+    trainable: bool = True
 
     def update(self, delta):
         data = self.data + delta
@@ -284,7 +285,7 @@ class SGD:
         updated = set()
         for node in self._graph.nodes:
             grad = grads.get(node.name)
-            if node.name in updated or grad is None:
+            if not node.tensor.trainable or node.name in updated or grad is None:
                 continue
             tensor = node.tensor
             delta = -(grad.data * self.learning_rate)
