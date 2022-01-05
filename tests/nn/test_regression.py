@@ -64,6 +64,6 @@ class TestTrainRegression(unittest.TestCase):
         self.y = Tensor(name='y', data=y, trainable=False)
 
     def test_train(self):
-        losses = self.network.train(x=self.x, y=self.y, epochs=10)
+        losses = self.network.train(x=self.x, y=self.y, epochs=100)
         loss = np.mean(losses)
         self.assertLess(loss, 0.1)
