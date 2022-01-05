@@ -5,6 +5,8 @@ from typing import Any
 from uuid import uuid4
 from collections import defaultdict
 
+import numpy as np
+
 
 def get_inner_ops(obj):
     ops = [v for k, v in vars(obj).items() if isinstance(v, Op)]
@@ -52,11 +54,12 @@ class Graph:
         self._output = output
         return output
 
-    def backward(self):
+    def backward(self, grad=None):
         tape = {}
         if self.nodes:
             tail = self.nodes[-1]
-            tape = {tail.name: Tensor(name=tail.name, data=1.0)}
+            grad = grad or Tensor(name=tail.name, data=grad)
+            tape = {tail.name: grad}
         for node in reversed(self.nodes):
             if node.grad_fn is None:
                 continue
@@ -162,3 +165,123 @@ class Mul(Op):
         output = a.data * b.data
         output = Tensor(name=self.name, data=output)
         return output
+
+
+class Linear(Op):
+
+    def __init__(self, dim_in, dim_out, weights=None, bias=None):
+        super().__init__()
+        self.dim_in = dim_in
+        self.dim_out = dim_out
+        self.weights = weights
+        self.bias = bias
+
+    def _init_weights_maybe(self):
+        if self.weights is None:
+            data = np.random.normal(size=(self.dim_in, self.dim_out))
+            self.weights = Tensor(name=self.name, data=data)
+
+    def _init_bias_maybe(self):
+        if self.bias is None:
+            data = np.random.normal(size=(self.dim_out,))
+            self.bias = Tensor(name=self.name, data=data)
+
+    def _set_backward_ctx(self, output, x):  # noqa
+        self._backward_ctx = {'x': x}
+
+    def _extend_graph(self, output, x):
+        self._graph.add_node(x, grad_fn=self._grad_x)
+        self._graph.add_node(self.weights, grad_fn=self._grad_w)
+        self._graph.add_node(self.bias, grad_fn=self._grad_b)
+        self._graph.add_node(output)
+        self._graph.add_edge(x, output)
+        self._graph.add_edge(self.weights, output)
+        self._graph.add_edge(self.bias, output)
+
+    def _grad_x(self, tape):
+        upstream = tape[self.name]
+        downstream = upstream.data.dot(self.weights.data.T)
+        grad = Tensor(name=self.name, data=downstream)
+        return grad
+
+    def _grad_w(self, tape):
+        upstream = tape[self.name]
+        x = self._backward_ctx['x']
+        downstream = x.data.T.dot(upstream.data)
+        grad = Tensor(name=self.name, data=downstream)
+        return grad
+
+    def _grad_b(self, tape):
+        upstream = tape[self.name]
+        downstream = upstream.data.sum(axis=0)
+        grad = Tensor(name=self.name, data=downstream)
+        return grad
+
+    def forward(self, x):
+        output = x.data.dot(self.weights.data) + self.bias.data
+        output = Tensor(name=self.name, data=output)
+        return output
+
+
+class Sigmoid(Op):
+
+    def _set_backward_ctx(self, output, x):  # noqa
+        self._backward_ctx = {'x': x, 'output': output}
+
+    def _extend_graph(self, output, x):
+        self._graph.add_node(x, grad_fn=self._grad_x)
+        self._graph.add_node(output)
+        self._graph.add_edge(x, output)
+
+    def _grad_x(self, tape):
+        upstream = tape[self.name]
+        output = self._backward_ctx['output']
+        local = output.data * (1 - output.data)
+        downstream = local * upstream.data
+        grad = Tensor(name=self.name, data=downstream)
+        return grad
+
+    def forward(self, x):
+        output = 1 / (1 + np.exp(-x.data))
+        output = Tensor(name=self.name, data=output)
+        return output
+
+
+class MSELoss:
+
+    def __init__(self):
+        self._output = None
+        self._target = None
+        self.name = type(self).__name__
+
+    def compute(self, output, target):
+        value = np.sum(0.5 * (target.data - output.data) ** 2)
+        value = Tensor(name=self.name, data=value)
+        self._output = output
+        self._target = target
+        return value
+
+    def grad(self):
+        data = self._output.data - self._target.data
+        grad = Tensor(name=self.name, data=data)
+        return grad
+
+
+class Network:
+
+    def __init__(self, graph, loss):
+        self.graph = graph
+        self.loss = loss
+        self._output = None
+
+    def forward(self, x):
+        output = self.graph.forward(x)
+        self._output = output
+        return output
+
+    def backward(self, target):
+        loss_value = self.loss.compute(output=self._output, target=target)
+        grad = self.loss.grad()
+        grads = self.graph.backward(grad)
+        data = {'loss': loss_value, 'grads': grads}
+        return data
