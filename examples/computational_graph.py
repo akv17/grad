@@ -3,7 +3,6 @@ Here we define, evaluate and differentiate scalar function `F(x, y, z) = (x + y)
 Following: https://youtu.be/dB-u77Y5a6A?t=534.
 """
 
-
 from grad.core import Tensor, Graph, Op
 from grad.ops import Add, Multiply
 

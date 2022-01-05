@@ -1,5 +1,5 @@
 """
-Here we build and train simple neural net to solve 1-dim regression.
+Here we build and train simple neural net to solve 1-dim regression task.
 Network architecture:
     1. Input: N x 10
     2. LinearLayer1: N x 16
