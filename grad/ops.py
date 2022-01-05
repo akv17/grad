@@ -20,22 +20,22 @@ class Add(Op):
         self._graph.add_edge(b, output)
 
     def _grad_a(self, tape):
-        upstream = tape[self.name]
+        upstream = tape[f'O:{self.name}']
         local = 1.0
         downstream = upstream.data * local
-        grad = Tensor(name=self.name, data=downstream)
+        grad = Tensor(name=f'G:A:{self.name}', data=downstream)
         return grad
 
     def _grad_b(self, tape):
-        upstream = tape[self.name]
+        upstream = tape[f'O:{self.name}']
         local = 1.0
         downstream = upstream.data * local
-        grad = Tensor(name=self.name, data=downstream)
+        grad = Tensor(name=f'G:B:{self.name}', data=downstream)
         return grad
 
     def forward(self, a, b):
         output = a.data + b.data
-        output = Tensor(name=self.name, data=output)
+        output = Tensor(name=f'O:{self.name}', data=output)
         return output
 
 
@@ -52,43 +52,45 @@ class Multiply(Op):
         self._backward_ctx = {'a': a, 'b': b}
 
     def _grad_a(self, tape):
-        upstream = tape[self.name]
+        upstream = tape[f'O:{self.name}']
         local = self._backward_ctx['b']
         downstream = upstream.data * local.data
-        grad = Tensor(name=self.name, data=downstream)
+        grad = Tensor(name=f'G:A:{self.name}', data=downstream)
         return grad
 
     def _grad_b(self, tape):
-        upstream = tape[self.name]
+        upstream = tape[f'O:{self.name}']
         local = self._backward_ctx['a']
         downstream = upstream.data * local.data
-        grad = Tensor(name=self.name, data=downstream)
+        grad = Tensor(name=f'G:B:{self.name}', data=downstream)
         return grad
 
     def forward(self, a, b):
         output = a.data * b.data
-        output = Tensor(name=self.name, data=output)
+        output = Tensor(name=f'O:{self.name}', data=output)
         return output
 
 
 class Linear(Op):
 
-    def __init__(self, dim_in, dim_out, weights=None, bias=None):
-        super().__init__()
+    def __init__(self, dim_in, dim_out, weights=None, bias=None, name=None):
+        super().__init__(name=name)
         self.dim_in = dim_in
         self.dim_out = dim_out
         self.weights = weights
         self.bias = bias
+        self._init_weights_maybe()
+        self._init_bias_maybe()
 
     def _init_weights_maybe(self):
         if self.weights is None:
             data = np.random.normal(size=(self.dim_in, self.dim_out))
-            self.weights = Tensor(name=self.name, data=data)
+            self.weights = Tensor(name=f'W:{self.name}', data=data)
 
     def _init_bias_maybe(self):
         if self.bias is None:
             data = np.random.normal(size=(self.dim_out,))
-            self.bias = Tensor(name=self.name, data=data)
+            self.bias = Tensor(name=f'B:{self.name}', data=data)
 
     def _set_backward_ctx(self, output, x):  # noqa
         self._backward_ctx = {'x': x}
@@ -103,27 +105,27 @@ class Linear(Op):
         self._graph.add_edge(self.bias, output)
 
     def _grad_x(self, tape):
-        upstream = tape[self.name]
+        upstream = tape[f'O:{self.name}']
         downstream = upstream.data.dot(self.weights.data.T)
-        grad = Tensor(name=self.name, data=downstream)
+        grad = Tensor(name=f'G:X:{self.name}', data=downstream)
         return grad
 
     def _grad_w(self, tape):
-        upstream = tape[self.name]
+        upstream = tape[f'O:{self.name}']
         x = self._backward_ctx['x']
         downstream = x.data.T.dot(upstream.data)
-        grad = Tensor(name=self.name, data=downstream)
+        grad = Tensor(f'G:W:{self.name}', data=downstream)
         return grad
 
     def _grad_b(self, tape):
-        upstream = tape[self.name]
+        upstream = tape[f'O:{self.name}']
         downstream = upstream.data.sum(axis=0)
-        grad = Tensor(name=self.name, data=downstream)
+        grad = Tensor(f'G:B:{self.name}', data=downstream)
         return grad
 
     def forward(self, x):
         output = x.data.dot(self.weights.data) + self.bias.data
-        output = Tensor(name=self.name, data=output)
+        output = Tensor(name=f'O:{self.name}', data=output)
         return output
 
 
@@ -138,14 +140,14 @@ class Sigmoid(Op):
         self._graph.add_edge(x, output)
 
     def _grad_x(self, tape):
-        upstream = tape[self.name]
+        upstream = tape[f'O:{self.name}']
         output = self._backward_ctx['output']
         local = output.data * (1 - output.data)
         downstream = local * upstream.data
-        grad = Tensor(name=self.name, data=downstream)
+        grad = Tensor(name=f'G:X:{self.name}', data=downstream)
         return grad
 
     def forward(self, x):
         output = 1 / (1 + np.exp(-x.data))
-        output = Tensor(name=self.name, data=output)
+        output = Tensor(name=f'O:{self.name}', data=output)
         return output
