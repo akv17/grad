@@ -118,3 +118,4 @@ class Network:
                     )
                     self._logger.info(msg)
                 iter_num += 1
+        return losses
