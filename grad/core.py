@@ -35,6 +35,13 @@ class Graph:
 
     def __init__(self, entry):
         self.entry = entry
+        self.nodes = None
+        self._inputs = None
+        self._outputs = None
+        self._output = None
+        self.reset()
+
+    def reset(self):
         self.nodes = []
         self._inputs = defaultdict(list)
         self._outputs = defaultdict(list)
@@ -60,10 +67,10 @@ class Graph:
         tape = {}
         if self.nodes:
             tail = self.nodes[-1]
-            grad = grad or Tensor(name=tail.name, data=1.0)
+            grad = grad or Tensor(name=f'O:{tail.name}', data=1.0)
             tape = {tail.name: grad}
         for node in reversed(self.nodes):
-            if node.grad_fn is None:
+            if node.grad_fn is None or not node.tensor.trainable:
                 continue
             grad = node.grad_fn(tape)
             if node.name not in tape:
@@ -75,8 +82,8 @@ class Graph:
 
 class Op(ABC):
 
-    def __init__(self):
-        self.name = f'{type(self).__name__}:{str(uuid4())[:8]}'
+    def __init__(self, name=None):
+        self.name = name or f'{type(self).__name__}:{str(uuid4())[:8]}'
         self._graph = None
         self._backward_ctx = None
 
