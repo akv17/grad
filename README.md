@@ -34,15 +34,17 @@
 6. `pip install -r requirements.txt`
 
 # Examples
-- `examples/computational_graph.py`: define, evaluate and differentiate custom function
+- `examples/scalar_func.py`: define, evaluate and differentiate custom scalar function
 - `examples/regression.py`: build and train simple neural net for regression task 
 
 # Tests
 *Ensure correct installation by running tests*
-1. `python -m unittest discover tests -bv`
+- `python -m unittest discover tests/native -bv`
+*Ensure correct implementation by running tests against `PyTorch` (requires `pytest` and `torch` installed)*
+- `pytest tests/torch/test_ops/test_binary.py -vs --tb=no`
 
 # Roadmap
-- ReLU, Softmax
+- Softmax
 - Cross-entropy loss
 - Conv2D, MaxPool2D
 - Tensor ops (reshape, transpose, max etc.)
