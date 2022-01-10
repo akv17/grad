@@ -7,15 +7,7 @@ from grad.ops import (
     ReLU,
     Sigmoid
 )
-
-
-def _compare_tensors(t0, t1):
-    t0 = t0.astype(np.float32)
-    t1 = t1.astype(np.float32)
-    shape_flag = t0.shape == t1.shape
-    eq_flag = np.allclose(t0, t1)
-    flag = shape_flag and eq_flag
-    return flag
+from tests.torch.utils import compare_tensors
 
 
 class _GradOpEval:
@@ -75,42 +67,29 @@ class _TestOp:
         self._torch_eval()
 
     def test_output(self):
-        flag = _compare_tensors(self._grad_eval.output, self._torch_eval.output)
+        flag = compare_tensors(self._grad_eval.output, self._torch_eval.output)
         return flag
 
     def test_grad(self):
-        flag = _compare_tensors(self._grad_eval.grad, self._torch_eval.grad)
+        flag = compare_tensors(self._grad_eval.grad, self._torch_eval.grad)
         return flag
 
 
-def _test_op(data, grad_op, torch_op):
+@pytest.mark.parametrize(
+    'name, grad_op, torch_op, data',
+    [
+        ('relu:1d', ReLU(), torch.nn.ReLU(), np.array([0.1, 0.0, 0.2, 0.3, -0.4])),
+        ('relu:2d', ReLU(), torch.nn.ReLU(), np.array([[0.1, 0.0, 0.2], [0.0, 0.0, -0.5]])),
+        ('relu:3d', ReLU(), torch.nn.ReLU(), np.array([[[0.1, 0.0, 0.2], [0.0, 0.0, -0.5]], [[2.0, 3.0, 4.0], [-2.0, -3.0, -4.0]]])),
+        ('sigmoid:1d', Sigmoid(), torch.nn.Sigmoid(), np.random.uniform(low=1e-5, size=(4,))),
+        ('sigmoid:2d', Sigmoid(), torch.nn.Sigmoid(), np.random.uniform(low=1e-5, size=(4, 2))),
+        ('sigmoid:3d', Sigmoid(), torch.nn.Sigmoid(), np.random.uniform(low=1e-5, size=(4, 3, 2))),
+    ]
+)
+def test_unary_op(name, grad_op, torch_op, data):
     cmd = _TestOp(data=data, grad_op=grad_op, torch_op=torch_op)
     cmd.evaluate()
     output_flag = cmd.test_output()
     assert output_flag
     grad_flag = cmd.test_grad()
     assert grad_flag
-
-
-@pytest.mark.parametrize(
-    'data',
-    [
-        np.array([0.1, 0.0, 0.2, 0.3, -0.4]),
-        np.array([[0.1, 0.0, 0.2], [0.0, 0.0, -0.5]]),
-        np.array([[[0.1, 0.0, 0.2], [0.0, 0.0, -0.5]], [[2.0, 3.0, 4.0], [-2.0, -3.0, -4.0]]]),
-    ]
-)
-def test_relu(data):
-    _test_op(data=data, grad_op=ReLU(), torch_op=torch.nn.ReLU())
-
-
-@pytest.mark.parametrize(
-    'data',
-    [
-        np.random.uniform(low=1e-5, size=(4, 1)),
-        np.random.uniform(low=1e-5, size=(4, 2)),
-        np.random.uniform(low=1e-5, size=(4, 3, 2)),
-    ]
-)
-def test_sigmoid(data):
-    _test_op(data=data, grad_op=Sigmoid(), torch_op=torch.nn.Sigmoid())
