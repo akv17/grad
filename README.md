@@ -14,9 +14,10 @@
 
 # Ops
 - Add
-- Multiply (element-wise)
-- Linear (matmul + bias)
+- Multiply
+- Linear
 - Sigmoid
+- ReLU
 
 # Losses
 - MSE
@@ -38,13 +39,14 @@
 - `examples/regression.py`: build and train simple neural net for regression task 
 
 # Tests
-*Ensure correct installation by running tests*
-- `python -m unittest discover tests/native -bv`
-*Ensure correct implementation by running tests against `PyTorch` (requires `pytest` and `torch` installed)*
-- `pytest tests/torch/test_ops/test_binary.py -vs --tb=no`
+*Ensure correct installation by running tests:*  
+- `python -m unittest discover tests/native -bv`  
+
+*Ensure correct implementation by running tests against `PyTorch` (requires `pytest` and `torch` installed):*  
+- `pytest tests/torch/test_ops/test_binary.py -vs --tb=no`  
 
 # Roadmap
-- Softmax
+- Matmul, Softmax
 - Cross-entropy loss
 - Conv2D, MaxPool2D
 - Tensor ops (reshape, transpose, max etc.)
