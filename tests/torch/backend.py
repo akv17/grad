@@ -47,7 +47,7 @@ class EvalGradOp:
     def binary(self, a, b):
         a = Tensor(name='a', data=a)
         b = Tensor(name='b', data=b)
-        grad = Tensor(name='b', data=np.ones(a.data.shape))
+        grad = Tensor(name='g', data=np.ones(a.data.shape))
         graph = Graph(self.op)
         graph.compile()
         output = graph.forward(a, b)
