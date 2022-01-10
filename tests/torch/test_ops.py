@@ -5,6 +5,7 @@ import numpy as np
 from grad.core import Tensor, Graph
 from grad.ops import (
     ReLU,
+    Sigmoid
 )
 
 
@@ -68,8 +69,8 @@ class _TestOp:
         self._torch_eval = None
 
     def evaluate(self):
-        self._grad_eval = _GradOpEval(data=self.data, op=ReLU())
-        self._torch_eval = _TorchOpEval(data=self.data, op=torch.nn.ReLU())
+        self._grad_eval = _GradOpEval(data=self.data, op=self.grad_op)
+        self._torch_eval = _TorchOpEval(data=self.data, op=self.torch_op)
         self._grad_eval()
         self._torch_eval()
 
@@ -101,3 +102,15 @@ def _test_op(data, grad_op, torch_op):
 )
 def test_relu(data):
     _test_op(data=data, grad_op=ReLU(), torch_op=torch.nn.ReLU())
+
+
+@pytest.mark.parametrize(
+    'data',
+    [
+        np.random.uniform(low=1e-5, size=(4, 1)),
+        np.random.uniform(low=1e-5, size=(4, 2)),
+        np.random.uniform(low=1e-5, size=(4, 3, 2)),
+    ]
+)
+def test_sigmoid(data):
+    _test_op(data=data, grad_op=Sigmoid(), torch_op=torch.nn.Sigmoid())
