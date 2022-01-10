@@ -43,7 +43,7 @@
 - `python -m unittest discover tests/native -bv`  
 
 *Ensure correct implementation by running tests against `PyTorch` (requires `pytest` and `torch` installed):*  
-- `pytest tests/torch/test_ops/test_binary.py -vs --tb=no`  
+- `pytest tests/torch/test_ops -vs --tb=no`  
 
 # Roadmap
 - Matmul, Softmax
