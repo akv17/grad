@@ -7,7 +7,8 @@ from .ops import (
     Add,
     Multiply,
     Linear,
-    Sigmoid
+    Sigmoid,
+    ReLU
 )
 
 __all__ = [
@@ -17,7 +18,8 @@ __all__ = [
     'Sigmoid',
     'MSELoss',
     'SGD',
-    'Network'
+    'Network',
+    'ReLU'
 ]
 
 

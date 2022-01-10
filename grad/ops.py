@@ -7,6 +7,7 @@ __all__ = [
     'Multiply',
     'Linear',
     'Sigmoid',
+    'ReLU'
 ]
 
 
@@ -132,7 +133,7 @@ class Linear(Op):
 class Sigmoid(Op):
 
     def _set_backward_ctx(self, output, x):  # noqa
-        self._backward_ctx = {'x': x, 'output': output}
+        self._backward_ctx = {'output': output}
 
     def _extend_graph(self, output, x):
         self._graph.add_node(x, grad_fn=self._grad_x)
@@ -149,5 +150,29 @@ class Sigmoid(Op):
 
     def forward(self, x):
         output = 1 / (1 + np.exp(-x.data))
+        output = Tensor(name=f'O:{self.name}', data=output)
+        return output
+
+
+class ReLU(Op):
+
+    def _set_backward_ctx(self, output, x):  # noqa
+        self._backward_ctx = {'output': output}
+
+    def _extend_graph(self, output, x):
+        self._graph.add_node(x, grad_fn=self._grad_x)
+        self._graph.add_node(output)
+        self._graph.add_edge(x, output)
+
+    def _grad_x(self, tape):
+        upstream = tape[f'O:{self.name}']
+        output = self._backward_ctx['output']
+        local = np.where(output.data > 0.0, 1.0, 0.0)
+        downstream = local * upstream.data
+        grad = Tensor(name=f'G:X:{self.name}', data=downstream)
+        return grad
+
+    def forward(self, x):
+        output = np.where(x.data > 0.0, x.data, 0.0)
         output = Tensor(name=f'O:{self.name}', data=output)
         return output
