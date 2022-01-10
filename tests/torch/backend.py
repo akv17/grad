@@ -17,26 +17,48 @@ def compare_tensors(t0, t1):
 
 
 @dataclass(frozen=True)
-class EvalResult:
+class EvalResultUnary:
     output: Any
     grad: Any
 
 
+@dataclass(frozen=True)
+class EvalResultBinary:
+    output: Any
+    grad_a: Any
+    grad_b: Any
+
+
 class EvalGradOp:
-    _TENSOR_NAME = 'T'
 
     def __init__(self, op):
         self.op = op
 
     def unary(self, x):
-        tensor = Tensor(name=self._TENSOR_NAME, data=x)
+        tensor = Tensor(name='x', data=x)
         graph = Graph(self.op)
         graph.compile()
         output = graph.forward(tensor)
         grads = graph.backward()
-        grad = grads[self._TENSOR_NAME]
-        grad = grad
-        rv = EvalResult(output=output.data, grad=grad.data)
+        grad = grads['x']
+        rv = EvalResultUnary(output=output.data, grad=grad.data)
+        return rv
+
+    def binary(self, a, b):
+        a = Tensor(name='a', data=a)
+        b = Tensor(name='b', data=b)
+        grad = Tensor(name='b', data=np.ones(a.data.shape))
+        graph = Graph(self.op)
+        graph.compile()
+        output = graph.forward(a, b)
+        grads = graph.backward(grad=grad)
+        grad_a = grads['a']
+        grad_b = grads['b']
+        rv = EvalResultBinary(
+            output=output.data,
+            grad_a=grad_a.data,
+            grad_b=grad_b.data
+        )
         return rv
 
 
@@ -52,5 +74,20 @@ class EvalTorchOp:
         output = self.op(tensor)
         output.backward(grad)
         grad = tensor.grad
-        rv = EvalResult(output=output.detach().numpy(), grad=grad.detach().numpy())
+        rv = EvalResultUnary(output=output.detach().numpy(), grad=grad.detach().numpy())
+        return rv
+
+    def binary(self, a, b):
+        a = torch.as_tensor(a)
+        b = torch.as_tensor(b)
+        grad = torch.as_tensor(np.ones(a.shape))
+        a.requires_grad = True
+        b.requires_grad = True
+        output = self.op(a, b)
+        output.backward(grad)
+        rv = EvalResultBinary(
+            output=output.detach().numpy(),
+            grad_a=a.grad.detach().numpy(),
+            grad_b=b.grad.detach().numpy(),
+        )
         return rv
