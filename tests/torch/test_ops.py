@@ -94,7 +94,9 @@ def _test_op(data, grad_op, torch_op):
 @pytest.mark.parametrize(
     'data',
     [
-        np.array([0.1, 0.0, 0.2, 0.3, -0.4])
+        np.array([0.1, 0.0, 0.2, 0.3, -0.4]),
+        np.array([[0.1, 0.0, 0.2], [0.0, 0.0, -0.5]]),
+        np.array([[[0.1, 0.0, 0.2], [0.0, 0.0, -0.5]], [[2.0, 3.0, 4.0], [-2.0, -3.0, -4.0]]]),
     ]
 )
 def test_relu(data):
