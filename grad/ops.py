@@ -22,15 +22,13 @@ class Add(Op):
 
     def _grad_a(self, tape):
         upstream = tape[f'O:{self.name}']
-        local = 1.0
-        downstream = upstream.data * local
+        downstream = upstream.data
         grad = Tensor(name=f'G:A:{self.name}', data=downstream)
         return grad
 
     def _grad_b(self, tape):
         upstream = tape[f'O:{self.name}']
-        local = 1.0
-        downstream = upstream.data * local
+        downstream = upstream.data
         grad = Tensor(name=f'G:B:{self.name}', data=downstream)
         return grad
 
