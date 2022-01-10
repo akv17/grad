@@ -16,7 +16,7 @@
 - Add
 - Multiply (element-wise)
 - Linear (matmul + bias)
-- Softmax
+- Sigmoid
 
 # Losses
 - MSE
