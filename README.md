@@ -1,5 +1,5 @@
 # grad
-*A tiny educational library for auto-differentiation and neural nets training from scratch
+A tiny educational library for auto-differentiation and neural nets training from scratch
 
 # Features
 - Define arbitrary scalar or tensor functions
